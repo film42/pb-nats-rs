@@ -1,0 +1,18 @@
+package warehouse;
+
+message Shipment {
+  optional string guid = 1;
+  optional string address = 2;
+  optional double price = 3;
+  optional string package_guid = 4;
+}
+
+message ShipmentRequest {
+  repeated string guid = 1;
+  repeated string address = 2;
+  repeated string package_guid = 3;
+}
+
+message Shipments {
+  repeated Shipment records = 1;
+}

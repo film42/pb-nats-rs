@@ -1,0 +1,16 @@
+[package]
+name = "pb-nats-rs"
+version = "0.1.0"
+authors = ["Garrett Thornburg <film42@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rants = { git = "https://github.com/davidMcneil/rants", branch = "master" }
+futures-preview = "0.3.0-alpha.19"
+tokio = "0.2.0-alpha.6"
+uuid = { version = "0.8", features = ["v4"]}
+failure = "0.1.6"
+protoc-rust = "2.0"
+protobuf = "2.8"
