@@ -13,7 +13,7 @@ use pb::rpc::{Request, Response};
 use pb::warehouse::{ShipmentRequest, Shipments};
 use protobuf::Message;
 use rants::{Client, Subject};
-use std::time::{Duration};
+use std::time::Duration;
 //use tokio::runtime::Runtime;
 use tokio::time::timeout;
 use tower::Service;
@@ -30,9 +30,7 @@ pub struct ShipmentsRpcClient {
 
 impl ShipmentsRpcClient {
     fn new(nats: Client) -> ShipmentsRpcClient {
-        ShipmentsRpcClient{
-            nats: nats,
-        }
+        ShipmentsRpcClient { nats: nats }
     }
 }
 
@@ -116,8 +114,8 @@ async fn send_request_through_nats(
             let mut res = Response::new();
             res.merge_from_bytes(&bytes)?;
             res
-        },
-        _ => bail!("No ACK msg received!: (msg1: {:?}, msg2: {:?})", msg1, msg2)
+        }
+        _ => bail!("No ACK msg received!: (msg1: {:?}, msg2: {:?})", msg1, msg2),
     };
     Ok(res)
 }
@@ -167,31 +165,33 @@ async fn main() {
         .concurrency_limit(100)
         .service(ShipmentsRpcClient::new(client.clone()));
 
-    let futures: Vec<_> = (1..100).into_iter().map(|i| {
-        let mut rpc_client = rpc_client.clone();
-        tokio::spawn(async move {
-            let mut req = ShipmentRequest::new();
-            let mut args = protobuf::RepeatedField::new();
-            args.push(i.to_string());
-            req.set_guid(args);
-            match rpc_client.ready().await {
-                Ok(_) => {
-                    println!("Got response for: {}", i);
-                    match rpc_client.call(req).await {
-
-                        Ok(shipments) => {
-                            //let shipments = search_shipments(&client).await.unwrap();
-                            for shipment in shipments.get_records().iter() {
-                                println!("Shipment guid: {}", shipment.get_guid());
+    let futures: Vec<_> = (1..100)
+        .into_iter()
+        .map(|i| {
+            let mut rpc_client = rpc_client.clone();
+            tokio::spawn(async move {
+                let mut req = ShipmentRequest::new();
+                let mut args = protobuf::RepeatedField::new();
+                args.push(i.to_string());
+                req.set_guid(args);
+                match rpc_client.ready().await {
+                    Ok(_) => {
+                        println!("Got response for: {}", i);
+                        match rpc_client.call(req).await {
+                            Ok(shipments) => {
+                                //let shipments = search_shipments(&client).await.unwrap();
+                                for shipment in shipments.get_records().iter() {
+                                    println!("Shipment guid: {}", shipment.get_guid());
+                                }
                             }
-                        },
-                        Err(err) => println!("Error: {}", err),
+                            Err(err) => println!("Error: {}", err),
+                        }
                     }
-                },
-                Err(err) => println!("Error: {}", err)
-            };
+                    Err(err) => println!("Error: {}", err),
+                };
+            })
         })
-    }).collect();
+        .collect();
 
     // futures.iter().map(|f| f.await);
 
