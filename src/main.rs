@@ -11,27 +11,21 @@ mod rpc;
 
 use rpc::GetResponseProtoable;
 
-use pb::rpc::Response as RpcResponse;
 use pb::warehouse::{Shipment, ShipmentRequest, Shipments};
 use protobuf::Message;
 use rants::Client;
-use tower::layer::Layer;
 use tower::Service;
-
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 #[derive(Clone)]
 pub struct ShipmentsRpcClient {
     nats: Client,
 }
 
-impl ShipmentsRpcClient {
-    fn new(nats: Client) -> ShipmentsRpcClient {
-        ShipmentsRpcClient { nats: nats }
-    }
-}
+//impl ShipmentsRpcClient {
+//    fn new(nats: Client) -> ShipmentsRpcClient {
+//        ShipmentsRpcClient { nats: nats }
+//    }
+//}
 
 pub enum ShipmentEndpoint {
     Search(ShipmentRequest),
@@ -89,29 +83,27 @@ impl rpc::Requestable for ShipmentEndpoint {
     }
 }
 
-impl Service<ShipmentEndpoint> for ShipmentsRpcClient {
-    type Response = Shipments;
-    type Error = failure::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
-
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, req: ShipmentEndpoint) -> Self::Future {
-        let nats = self.nats.clone();
-        Box::pin(async move {
-            //let res = rpc::call(&nats, req).await?;
-            let mut shipments = Shipments::new();
-            //shipments.merge_from_bytes(res.get_response_proto())?;
-            Ok(shipments)
-        })
-    }
-}
+// impl Service<ShipmentEndpoint> for ShipmentsRpcClient {
+//     type Response = Shipments;
+//     type Error = failure::Error;
+//     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+//
+//     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+//         Poll::Ready(Ok(()))
+//     }
+//
+//     fn call(&mut self, req: ShipmentEndpoint) -> Self::Future {
+//         let nats = self.nats.clone();
+//         Box::pin(async move {
+//             let res = rpc::call(&nats, req).await?;
+//             let mut shipments = Shipments::new();
+//             shipments.merge_from_bytes(res.get_response_proto())?;
+//             Ok(shipments)
+//         })
+//     }
+// }
 
 use pb::rpc::Request as RpcRequest;
-
-use tower::util::BoxService;
 
 pub struct ShipmentClient<S> {
     rpc_client: S,
@@ -165,9 +157,9 @@ async fn main() {
     client.connect().await;
 
     {
-        use tower::{ServiceBuilder, ServiceExt};
+        use tower::ServiceBuilder;
         let rpc_client_srv = rpc::RpcClient::new(client.clone());
-        let mut rpc_client = ServiceBuilder::new()
+        let rpc_client = ServiceBuilder::new()
             .buffer(100)
             .concurrency_limit(100)
             .service(rpc_client_srv.clone());
@@ -181,9 +173,9 @@ async fn main() {
         let mut res: Shipments = sc.search(req).await.unwrap();
         let mut shipment: Shipment = res.take_records().pop().unwrap();
         println!("First: {:?}", shipment);
-        //  shipment.set_address("1337 Apple Ln".to_string());
-        //  let res: Shipment = sc.call(ShipmentEndpoint::Create(shipment)).await.unwrap();
-        //  println!("Second: {:?}", res);
+        shipment.set_address("1337 Apple Ln".to_string());
+        let res: Shipment = sc.create(shipment).await.unwrap();
+        println!("Second: {:?}", res);
     }
 
     // {
