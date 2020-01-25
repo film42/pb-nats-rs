@@ -11,7 +11,7 @@ rants = "0.4"
 futures = "0.3"
 tokio = "0.2"
 uuid = { version = "0.8", features = ["v4"]}
-failure = "0.1.6"
+failure = "0.1"
 protoc-rust = "2.0"
 protobuf = "2.8"
 # async-trait = "*"
